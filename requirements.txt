@@ -1,0 +1,5 @@
+pandas>=2.2
+openpyxl>=3.1
+PyYAML>=6.0
+SQLAlchemy>=2.0      # only needed for type: database (Oracle, SQL Server, PostgreSQL, ...)
+pytest>=8.0

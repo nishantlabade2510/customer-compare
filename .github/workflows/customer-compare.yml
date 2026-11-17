@@ -1,0 +1,48 @@
+name: customer-compare
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"   # nightly reconciliation
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pytest
+
+  reconcile:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    env:
+      # For a real database, set SOURCE_DB_URL / TARGET_DB_URL as repository secrets
+      # and switch both sides to type: database in config/config.yaml.
+      SOURCE_SQLITE_PATH: data/source.db
+      TARGET_SQLITE_PATH: data/target.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      # Replace with the real extract step (database load, file drop, etc.) when one exists.
+      - name: Prepare sample databases
+        run: python scripts/load_samples_to_db.py
+      - name: Run comparison
+        run: python -m customer_compare --config config/config.yaml
+      - name: Upload mismatch report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: customer-mismatch-report
+          path: reports/
+          if-no-files-found: warn

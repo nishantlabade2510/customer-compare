@@ -1,0 +1,51 @@
+# Customer source-vs-target comparison (database mode).
+# Paths are relative to the project root. Values written as ${VAR} or ${VAR:-default}
+# are read from the environment, so CI secrets can replace the defaults.
+
+run:
+  name: customer_source_vs_target
+  output_dir: reports
+  report_file: customer_mismatch_report.xlsx
+  report_passes: true          # keep Pass rows, as in the sample mismatch layout
+  check_duplicates: true
+  fail_on_mismatch: true       # exit code 1 when any check fails, which fails the CI job
+
+# Business key on each side. The target key may use a different column name.
+key:
+  source: CustomerID
+  target: CustomerID
+
+source:
+  type: sqlite                 # sqlite | database | excel | csv
+  path: ${SOURCE_SQLITE_PATH:-data/source.db}
+  query_file: sql/source_customers.sql
+  # For a real server, switch to:
+  #   type: database
+  #   url: ${SOURCE_DB_URL}    # e.g. postgresql+psycopg2://user:pass@host/db
+  #   query_file: sql/source_customers.sql
+  # and install the matching driver. SQLAlchemy URL formats are listed in the README.
+
+target:
+  type: sqlite
+  path: ${TARGET_SQLITE_PATH:-data/target.db}
+  query_file: sql/target_customers.sql
+
+# Column mapping. `transform` is applied to the SOURCE value before comparison,
+# which validates the expected transformation (e.g. Name must equal UPPER(Name) in target).
+# compare: text | numeric | date. `tolerance` applies to numeric columns only.
+columns:
+  - {source: CustomerCode, target: CustomerCode, transform: [trim, upper], compare: text}
+  - {source: CustomerName, target: CustomerName, transform: [trim, upper], compare: text}
+  - {source: DOB,          target: DOB,          compare: date}
+  - {source: Gender,       target: Gender,       transform: [trim], compare: text}
+  - {source: Email,        target: Email,        transform: [trim, lower], compare: text}
+  - {source: Phone,        target: Phone,        transform: [trim], compare: text}
+  - {source: City,         target: City,         transform: [trim, upper], compare: text}
+  - {source: StateName,    target: StateName,    transform: [trim, upper], compare: text}
+  - {source: Country,      target: Country,      transform: [trim, upper], compare: text}
+  - {source: Balance,      target: Balance,      compare: numeric, tolerance: 0.0}
+
+# Columns that must not be NULL on each side (names as they appear on that side).
+not_null:
+  source: [CustomerID, CustomerName, Email]
+  target: [CustomerID, CustomerCode, CustomerName, Email, Country, Balance]

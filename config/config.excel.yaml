@@ -1,0 +1,40 @@
+# Same comparison as config.yaml, reading the two workbooks directly.
+# Useful for ad-hoc runs and for the unit tests (no database needed).
+
+run:
+  name: customer_source_vs_target_excel
+  output_dir: reports
+  report_file: customer_mismatch_report_excel.xlsx
+  report_passes: true
+  check_duplicates: true
+  fail_on_mismatch: true
+
+key:
+  source: CustomerID
+  target: CustomerID
+
+source:
+  type: excel
+  path: data/samples/customer_SOURCE_DATA.xlsx
+  sheet: SOURCE
+
+target:
+  type: excel
+  path: data/samples/customer_TARGET_DATA.xlsx
+  sheet: TARGET
+
+columns:
+  - {source: CustomerCode, target: CustomerCode, transform: [trim, upper], compare: text}
+  - {source: CustomerName, target: CustomerName, transform: [trim, upper], compare: text}
+  - {source: DOB,          target: DOB,          compare: date}
+  - {source: Gender,       target: Gender,       transform: [trim], compare: text}
+  - {source: Email,        target: Email,        transform: [trim, lower], compare: text}
+  - {source: Phone,        target: Phone,        transform: [trim], compare: text}
+  - {source: City,         target: City,         transform: [trim, upper], compare: text}
+  - {source: StateName,    target: StateName,    transform: [trim, upper], compare: text}
+  - {source: Country,      target: Country,      transform: [trim, upper], compare: text}
+  - {source: Balance,      target: Balance,      compare: numeric, tolerance: 0.0}
+
+not_null:
+  source: [CustomerID, CustomerName, Email]
+  target: [CustomerID, CustomerCode, CustomerName, Email, Country, Balance]
